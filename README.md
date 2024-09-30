@@ -5,9 +5,7 @@ This project demonstrates the use of slices and maps in Go programming language.
 ## Table of Contents
 - [Features](#features)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Code Structure](#code-structure)
-- [License](#license)
+
 
 ## Features
 - Create maps using the `make` function.
