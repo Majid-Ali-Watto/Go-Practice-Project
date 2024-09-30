@@ -35,17 +35,14 @@ jobs:
       - name: Get latest version tag
         id: get_tag
         run: |
-          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
           echo "Latest tag: $latest_tag"
-          if [ -z "$latest_tag" ]; then
-            latest_tag="v0.0.0"
-          fi
-          echo "Latest version is $latest_tag"
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
 
       - name: Increment version
         run: |
-          IFS='.' read -r major minor patch <<< "${{ env.LATEST_TAG#v }}"
+          LATEST_TAG="${{ env.LATEST_TAG }}"
+          IFS='.' read -r major minor patch <<< "${LATEST_TAG#v}"
           patch=$((patch + 1)) # Increment patch version
           NEW_VERSION="$major.$minor.$patch"
           echo "New Version: $NEW_VERSION"
