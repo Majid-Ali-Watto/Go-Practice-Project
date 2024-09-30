@@ -13,61 +13,56 @@ jobs:
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
 
+      # Checkout the repository code
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-
+      # Setup Go
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: '1.23'  # Specify the version of Go you want to use
 
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-
+      # List files in the repository
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
 
+      # Run Go application
       - name: Run Go application
         run: go run .
 
-      - name: Get latest version tag
-        id: get_tag
+      # Extract version from version.go
+      - name: Extract version from version.go
+        id: extract_version
         run: |
-          latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
-          echo "Latest tag: $latest_tag"
-          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+          VERSION=$(grep '^var Version' version.go | sed -E 's/var Version = "(.*)"/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
 
-      - name: Increment version
+      # Commit any changes (if needed)
+      - name: Commit changes
+        if: always()  # Always attempt this, just in case there are changes to commit
         run: |
-          LATEST_TAG="${{ env.LATEST_TAG }}"
-          IFS='.' read -r major minor patch <<< "${LATEST_TAG#v}"
-          patch=$((patch + 1)) # Increment patch version
-          NEW_VERSION="$major.$minor.$patch"
-          echo "New Version: $NEW_VERSION"
-          # Update version.go with the new version
-          sed -i "s/^var Version = \".*\"/var Version = \"$NEW_VERSION\"/" version.go
-          echo "Updated version.go with version $NEW_VERSION"
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add .
+          git commit -m "Push changes with version ${{ env.VERSION }}" || echo "No changes to commit"
 
-      - name: Commit version bump
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add version.go
-          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
-
-      - name: Push changes
+      # Push the code
+      - name: Push changes to repository
         run: |
           git push origin master
 
+      # Tag the repository with the extracted version
       - name: Tag the repository
         if: success()  # Only run this step if the previous steps were successful
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token provided by GitHub Actions
         run: |
-          git tag "v${{ env.NEW_VERSION }}"
-          git push origin "v${{ env.NEW_VERSION }}"
+          VERSION="${{ env.VERSION }}"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
 
+      # Print status of the job
       - run: echo "🍏 This job's status is ${{ job.status }}."
