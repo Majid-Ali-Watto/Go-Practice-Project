@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
@@ -25,3 +26,12 @@ jobs:
       - name: Run Go application
         run: go run .
       - run: echo "🍏 This job's status is ${{ job.status }}."
+
+      - name: Tag the repository
+        if: success()  # Only run this step if the previous steps were successful
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token provided by GitHub Actions
+        run: |
+          TAG="v1.0.0"  # Define your version tag here; you can also generate this dynamically
+          git tag $TAG
+          git push origin $TAG
