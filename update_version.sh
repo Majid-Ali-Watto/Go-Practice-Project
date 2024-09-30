@@ -29,6 +29,7 @@ if [ "$new_version" != "$current_version" ]; then
     # Update the version.go file with the new version
     sed -i "s/^var Version = \".*\"/var Version = \"$new_version\"/" version.go
     echo "Updated version.go with version $new_version"
+
 else
     echo "Version remains the same: $current_version"
 fi

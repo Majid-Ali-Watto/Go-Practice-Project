@@ -8,6 +8,7 @@ on:
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
+
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
@@ -32,35 +33,60 @@ jobs:
       - name: Run Go application
         run: go run .
 
-      # Extract version from version.go
-      - name: Extract version from version.go
-        id: extract_version
+      # Extract and increment version from version.go
+      - name: Increment version in version.go
+        id: increment_version
         run: |
-          VERSION=$(grep '^var Version' version.go | sed -E 's/var Version = "(.*)"/\1/')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Extracted version: $VERSION"
+          # Read the current version from version.go
+          current_version=$(grep -oP 'var Version = "\K[0-9]+\.[0-9]+\.[0-9]+' version.go)
 
-      # Commit any changes (if needed)
-      - name: Commit changes
-        if: always()  # Always attempt this, just in case there are changes to commit
+          # Split the version into major, minor, and patch
+          IFS='.' read -r major minor patch <<< "$current_version"
+
+          # Increment the patch version if it's less than 9
+          if [ "$patch" -lt 9 ]; then
+              patch=$((patch + 1))
+          else
+              # If the patch version is 9, reset it and increment minor if less than 9
+              patch=0
+              if [ "$minor" -lt 9 ]; then
+                  minor=$((minor + 1))
+              else
+                  # If the minor version is 9, reset it and increment major
+                  minor=0
+                  major=$((major + 1))
+              fi
+          fi
+
+          # New version format
+          new_version="$major.$minor.$patch"
+
+          # Update version.go with the new version
+          sed -i "s/^var Version = \".*\"/var Version = \"$new_version\"/" version.go
+          echo "Updated version.go with version $new_version"
+          echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+
+      # Commit changes if the version has been updated
+      - name: Commit version change
+        if: env.NEW_VERSION != ''  # Only commit if a new version is set
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git add .
-          git commit -m "Push changes with version ${{ env.VERSION }}" || echo "No changes to commit"
+          git add version.go
+          git commit -m "Bump version to ${{ env.NEW_VERSION }}" || echo "No changes to commit"
 
       # Push the code
       - name: Push changes to repository
         run: |
           git push origin master
 
-      # Tag the repository with the extracted version
+      # Tag the repository with the new version
       - name: Tag the repository
         if: success()  # Only run this step if the previous steps were successful
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token provided by GitHub Actions
         run: |
-          VERSION="${{ env.VERSION }}"
+          VERSION="${{ env.NEW_VERSION }}"
           git tag "v$VERSION"
           git push origin "v$VERSION"
 
