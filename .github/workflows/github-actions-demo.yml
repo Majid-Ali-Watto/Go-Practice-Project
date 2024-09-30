@@ -1,4 +1,4 @@
-name: Versioning Workflow
+name: Versioning and Tagging Workflow
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  increment-version:
+  versioning:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.23'  # Specify the version of Go you want to use
+          go-version: '1.23'
 
       - name: Read current version
         id: get_version
@@ -46,3 +46,15 @@ jobs:
 
       - name: Run Go application
         run: go run .
+        continue-on-error: false  # If this fails, the job stops
+
+      - name: Create and push a new tag
+        if: success()  # Only run this step if the previous steps were successful
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub Actions' token
+        run: |
+          VERSION="${{ env.version }}"
+          NEW_VERSION="${{ steps.get_version.outputs.NEW_VERSION }}"
+          # Create a new tag with the new version
+          git tag -a "v$NEW_VERSION" -m "Version $NEW_VERSION"
+          git push origin "v$NEW_VERSION"
