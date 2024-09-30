@@ -1,6 +1,6 @@
 # Go Slices and Maps Example
 
-This project demonstrates the use of slices and maps in Go programming language. It specifically illustrates how to create and manipulate maps, as well as store them in slices.
+This project demonstrates the use of slices, arrays, structs and maps in Go programming language. It specifically illustrates how to create and manipulate maps, as well as store them in slices.
 
 ## Table of Contents
 - [Features](#features)
@@ -30,5 +30,5 @@ To run this project, you need to have Go installed on your machine. You can down
 
 2. Run the program:
     ```bash
-    go run main.go
+    go run .
     ```
