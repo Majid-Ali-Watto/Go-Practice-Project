@@ -24,7 +24,7 @@ To run this project, you need to have Go installed on your machine. You can down
 
 1. Clone the repository:
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/Majid-Ali-Watto/Go-Practice-Project.git
     cd <repository-directory>
     ```
 
