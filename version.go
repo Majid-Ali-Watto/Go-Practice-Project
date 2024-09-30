@@ -5,7 +5,7 @@ import (
 )
 
 // Version represents the current version of the application
-var Version = "0.0.1" // Initial version
+var Version = "0.0.1"
 
 // PrintVersion prints the current version
 func PrintVersion() {
