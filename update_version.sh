@@ -1,39 +1,34 @@
 #!/bin/bash
 
-# Extract the current version from version.go
-current_version=$(grep '^var Version' version.go | sed -E 's/var Version = "(.*)"/\1/')
-echo "Current version: $current_version"
+# Read the current version from version.go
+current_version=$(grep -oP 'var Version = "\K[0-9]+\.[0-9]+\.[0-9]+' version.go)
 
-# Split version into major, minor, patch
-IFS='.' read -r major minor patch <<< "${current_version#v}"
+# Split the version into major, minor, and patch
+IFS='.' read -r major minor patch <<< "$current_version"
 
-# Increment the patch version
-patch=$((patch + 1))
-
-# If patch exceeds 9, reset patch to 0 and increment minor
-if [ "$patch" -ge 10 ]; then
-  patch=0
-  minor=$((minor + 1))
+# Increment the patch version if it's less than 9
+if [ "$patch" -lt 9 ]; then
+    patch=$((patch + 1))
+else
+    # If the patch version is 9, reset it and increment minor if less than 9
+    patch=0
+    if [ "$minor" -lt 9 ]; then
+        minor=$((minor + 1))
+    else
+        # If the minor version is 9, reset it and increment major
+        minor=0
+        major=$((major + 1))
+    fi
 fi
 
-# If minor exceeds 9, reset minor to 0 and increment major
-if [ "$minor" -ge 10 ]; then
-  minor=0
-  major=$((major + 1))
-fi
-
-# Create new version string
+# New version format
 new_version="$major.$minor.$patch"
-echo "New version: $new_version"
 
-# Update version.go with the new version
-sed -i "s/^var Version = \".*\"/var Version = \"$new_version\"/" version.go
-echo "Updated version.go with new version $new_version"
-
-# Add updated version.go to staging
-git add version.go
-
-# Append new version to commit message
-# Get the latest commit message and append the new version
-commit_message=$(git log -1 --pretty=%B)
-git commit --amend -m "$commit_message - Bump version to $new_version"
+# Check if the version has changed
+if [ "$new_version" != "$current_version" ]; then
+    # Update the version.go file with the new version
+    sed -i "s/^var Version = \".*\"/var Version = \"$new_version\"/" version.go
+    echo "Updated version.go with version $new_version"
+else
+    echo "Version remains the same: $current_version"
+fi
