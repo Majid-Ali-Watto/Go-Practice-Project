@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"Practice_Projects/person" // Import the person package
+	"fmt"
+)
 
 func makeArray() {
 	arr := [10]string{} // array of 10 elements
@@ -29,4 +32,25 @@ func makeArray() {
 	for i, v := range arr {
 		fmt.Printf("%s at %d\n", v, i)
 	}
+
+	arr[5] = "Bahawalnagar"
+	// arr[5] is replaced with Bahawalnagar
+	fmt.Println("Print array without iteration")
+	fmt.Println(arr)
+
+	persons := [5]person.Person{}
+	persons[0] = person.Person{
+		ID:   1,
+		Name: "Bahawalnagar",
+		Age:  1900,
+	}
+	persons[4] = person.Person{
+		ID:   1,
+		Name: "Ali",
+		Age:  19,
+	}
+	fmt.Println(persons)
+	fmt.Println(persons[4])
+	// fmt.Println(persons[5]) // invalid argument: index 5 out of bounds [0:5]
+
 }
