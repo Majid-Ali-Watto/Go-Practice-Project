@@ -44,7 +44,8 @@ jobs:
       - name: Increment tag
         id: increment_tag
         run: |
-          IFS='.' read -r major minor patch <<< "${{ env.latest_tag:1 }}"
+          TAG="${{ env.latest_tag }}"
+          IFS='.' read -r major minor patch <<< "${TAG:1}"  # Skip the leading 'v'
           new_patch=$((patch + 1))
           NEW_TAG="v$major.$minor.$new_patch"
           echo "New tag: $NEW_TAG"
