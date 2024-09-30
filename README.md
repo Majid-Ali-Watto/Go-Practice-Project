@@ -30,5 +30,5 @@ To run this project, you need to have Go installed on your machine. You can down
 
 2. Run the program:
     ```bash
-    go run main.go
+    go run .
     ```
