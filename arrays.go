@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func makeArray() {
-	arr := [10]string{}
+	arr := [10]string{} // array of 10 elements
 	arr[0] = "Majid"
 	arr[1] = "Ali"
 	arr[2] = "Watto"
