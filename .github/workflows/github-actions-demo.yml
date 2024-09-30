@@ -30,35 +30,30 @@ jobs:
       - name: Get latest tag
         id: get_latest_tag
         run: |
-          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")  # Get the latest tag or use a default
+          git fetch --tags  # Fetch all tags to ensure we have the latest
+          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")  # Get the latest tag or set default
           echo "Latest tag: $TAG"
-          echo "latest_tag=$TAG" >> $GITHUB_ENV
+          echo "LATEST_TAG=$TAG" >> $GITHUB_ENV  # Set environment variable for later use
 
-      - name: Increment tag
+      - name: Increment tag version
         id: increment_tag
         run: |
-          TAG="${{ env.latest_tag }}"
-          IFS='.' read -r major minor patch <<< "${TAG:1}"  # Skip the leading 'v'
-          new_patch=$((patch + 1))
-          NEW_TAG="v$major.$minor.$new_patch"
-          echo "New tag: $NEW_TAG"
-          echo "new_tag=$NEW_TAG" >> $GITHUB_ENV
+          # Split the latest tag into its components
+          IFS='.' read -r -a TAG_PARTS <<< "${{ env.LATEST_TAG }}"
 
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          git fetch --tags
-          if git rev-parse "${{ env.new_tag }}" >/dev/null 2>&1; then
-            echo "Tag already exists. Skipping tag creation."
-            echo "tag_exists=true" >> $GITHUB_ENV
-          else
-            echo "tag_exists=false" >> $GITHUB_ENV
-          fi
+          # Increment the patch version (you can change this logic for major/minor increments)
+          PATCH_VERSION=$((TAG_PARTS[2] + 1))
+          NEW_TAG="v${TAG_PARTS[0]}.${TAG_PARTS[1]}.$PATCH_VERSION"
+          echo "New tag: $NEW_TAG"
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV  # Set new tag as environment variable
 
       - name: Tag the repository
-        if: success() && env.tag_exists == 'false'  # Only run this step if the previous steps were successful and the tag does not exist
+        if: success()  # Only run this step if the previous steps were successful
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token provided by GitHub Actions
         run: |
-          git tag ${{ env.new_tag }}
-          git push origin ${{ env.new_tag }}
+          git tag ${{ env.NEW_TAG }}
+          git push origin ${{ env.NEW_TAG }}
+
+      - run: |
+          echo "✅ New tag created and pushed: ${{ env.NEW_TAG }}"
