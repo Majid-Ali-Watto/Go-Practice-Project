@@ -1,59 +1,48 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Versioning Workflow
+
 on:
   push:
     branches:
       - master
 
 jobs:
-  Explore-GitHub-Actions:
+  increment-version:
     runs-on: ubuntu-latest
+
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: '1.23'  # Specify the version of Go you want to use
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+
+      - name: Read current version
+        id: get_version
         run: |
-          ls ${{ github.workspace }}
+          VERSION=$(grep -oP '(?<=var Version = ")[^"]*' version.go)
+          echo "Current Version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
+
+      - name: Increment version
+        run: |
+          VERSION="${{ env.version }}"
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          patch=$((patch + 1)) # Increment patch version
+          NEW_VERSION="$major.$minor.$patch"
+          echo "New Version: $NEW_VERSION"
+          # Update version.go with the new version
+          sed -i "s/^var Version = \".*\"/var Version = \"$NEW_VERSION\"/" version.go
+          echo "Updated version.go with version $NEW_VERSION"
+
+      - name: Commit version changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add version.go
+          git commit -m "Bump version to $NEW_VERSION"
+          git push origin master # Push changes back to the repository
+
       - name: Run Go application
         run: go run .
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-
-      - name: Get latest tag
-        id: get_latest_tag
-        run: |
-          git fetch --tags  # Fetch all tags to ensure we have the latest
-          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")  # Get the latest tag or set default
-          echo "Latest tag: $TAG"
-          echo "LATEST_TAG=$TAG" >> $GITHUB_ENV  # Set environment variable for later use
-
-      - name: Increment tag version
-        id: increment_tag
-        run: |
-          # Split the latest tag into its components
-          IFS='.' read -r -a TAG_PARTS <<< "${{ env.LATEST_TAG }}"
-
-          # Increment the patch version (you can change this logic for major/minor increments)
-          PATCH_VERSION=$((TAG_PARTS[2] + 1))
-          NEW_TAG="v${TAG_PARTS[0]}.${TAG_PARTS[1]}.$PATCH_VERSION"
-          echo "New tag: $NEW_TAG"
-          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV  # Set new tag as environment variable
-
-      - name: Tag the repository
-        if: success()  # Only run this step if the previous steps were successful
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token provided by GitHub Actions
-        run: |
-          git tag ${{ env.NEW_TAG }}
-          git push origin ${{ env.NEW_TAG }}
-
-      - run: |
-          echo "✅ New tag created and pushed: ${{ env.NEW_TAG }}"
